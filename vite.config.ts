@@ -1,8 +1,13 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: "./",
-  server: {
-    allowedHosts: ["their-specially-listed-consumption.trycloudflare.com"],
+  base: "/",
+  build: {
+    rollupOptions: {
+      input: {
+        main: "index.html",
+        controller: "controller.html",
+      },
+    },
   },
 });
