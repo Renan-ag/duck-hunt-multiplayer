@@ -1,0 +1,67 @@
+:root {
+  --bg: #0f172a;
+  --primary: #22c55e;
+  --primary-text: #022c22;
+  --danger: #ef4444;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  touch-action: none;
+}
+
+body {
+  height: 100vh;
+  background: var(--bg);
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  transition: background 0.3s;
+}
+
+h1 {
+  font-size: 1.4rem;
+}
+
+p {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+button {
+  width: 80%;
+  padding: 16px;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+}
+
+#start {
+  background: var(--primary);
+  color: var(--primary-text);
+}
+
+#recalibrate {
+  background: var(--primary);
+  color: var(--primary-text);
+  position: fixed;
+  bottom: 96px;
+  width: 90%;
+  display: none;
+}
+
+#shoot {
+  background: var(--danger);
+  color: white;
+  position: fixed;
+  bottom: 24px;
+  width: 90%;
+  display: none;
+}
