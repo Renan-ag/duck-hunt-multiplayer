@@ -10,4 +10,7 @@ export default defineConfig({
       },
     },
   },
+  server: {
+    allowedHosts: ["purchased-keeping-voices-monitors.trycloudflare.com"],
+  },
 });

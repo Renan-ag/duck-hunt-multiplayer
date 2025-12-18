@@ -38,6 +38,8 @@ export function gameScene() {
     ]),
   ];
 
+  k.add([k.text("SCORE", { font: "nes", size: 5 }), k.pos(216, 216), k.z(2)]);
+
   const roundCount = k.add([
     k.text("1", fontConfig),
     k.pos(k.center().x + 11, 183.5),
@@ -86,7 +88,7 @@ export function gameScene() {
   const roundStartController = gameManager.onStateEnter(
     "round-start",
     async (isFirstRound: boolean) => {
-      if (!isFirstRound) gameManager.preySpeed += 50;
+      if (!isFirstRound) gameManager.preySpeed += 20;
       k.play("ui", { volume: 0.8 });
       gameManager.currentRoundNumber++;
       roundCount.text = String(gameManager.currentRoundNumber);
@@ -213,6 +215,7 @@ export function gameScene() {
     scores.forEach((score, index) => {
       score.text = formatScore(gameManager.currentScore[index], 3);
     });
+
     bulletUIMasks.forEach((mask, index) => {
       mask.width =
         BULLET_UI_MASK_WIDTH[

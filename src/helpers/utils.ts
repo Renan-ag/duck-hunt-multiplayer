@@ -28,7 +28,7 @@ export function handlePlayerInput(
   // 🎮 PONTEIRO ABSOLUTO
   if (payload.gamma !== undefined && payload.beta !== undefined) {
     player.targetX = k.map(payload.gamma, -30, 30, 0, k.width());
-    player.targetY = k.map(payload.beta, -30, 30, 0, k.height());
+    player.targetY = k.map(-payload.beta, -30, 30, 0, k.height());
   }
 
   // 🔫 TIRO

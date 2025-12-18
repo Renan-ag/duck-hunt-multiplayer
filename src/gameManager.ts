@@ -21,7 +21,7 @@ function makeGameManager() {
       numberBulletsLeft: [3, 3, 3, 3],
       numberDucksShotInRound: 0,
       finalRound: 3,
-      preySpeed: 70,
+      preySpeed: 65,
       resetGameState(this: GameObj) {
         this.isGamePaused = false;
         this.currentScore = [0, 0, 0, 0];
@@ -29,7 +29,7 @@ function makeGameManager() {
         this.currentHuntNumber = 0;
         this.numberBulletsLeft = [3, 3, 3, 3];
         this.numberDucksShotInRound = 0;
-        this.preySpeed = 100;
+        this.preySpeed = 65;
       },
     },
   ]);

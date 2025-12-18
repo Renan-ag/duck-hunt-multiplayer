@@ -26,9 +26,11 @@ window.onload = () => {
   const recalibrateBtn = document.getElementById("recalibrate");
 
   const network = new SocketClient<ServerMessage>(WS_URL);
+  const SHOOT_COOLDOWN = 500;
 
   let playerId: number | null = null;
 
+  let canShoot = true;
   let calibrated = false;
   let baseGamma = 0;
   let baseBeta = 0;
@@ -51,7 +53,6 @@ window.onload = () => {
   }
 
   /* NETWORK */
-
   const roomId = getRoomId();
 
   if (!roomId) {
@@ -113,14 +114,12 @@ window.onload = () => {
     lastGamma = e.gamma ?? 0;
     lastBeta = e.beta ?? 0;
 
-    // offset absoluto em relação ao centro calibrado
     let gamma = (lastGamma - baseGamma) * SENSITIVITY;
     let beta = (lastBeta - baseBeta) * SENSITIVITY;
 
     gamma = applyDeadZone(gamma);
     beta = applyDeadZone(beta);
 
-    // limites físicos confortáveis
     gamma = clamp(gamma, -MAX_TILT, MAX_TILT);
     beta = clamp(beta, -MAX_TILT, MAX_TILT);
 
@@ -166,12 +165,20 @@ window.onload = () => {
 
   if (shootBtn) {
     shootBtn.onclick = () => {
+      if (!canShoot) return;
+
+      canShoot = false;
+
       vibrate(50);
 
       network.send({
         type: "input",
         payload: { shoot: true },
       });
+
+      setTimeout(() => {
+        canShoot = true;
+      }, SHOOT_COOLDOWN);
     };
   }
 };

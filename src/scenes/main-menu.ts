@@ -48,8 +48,7 @@ export function mainMenu() {
     bestScore = [0, 0, 0, 0];
     k.setData("best-score", bestScore);
   }
-
-  const highScore = Math.max(...bestScore);
+  const highScore = bestScore ? Math.max(...bestScore) : 0;
 
   k.add([
     k.text(`BEST SCORE:${formatScore(highScore, 3)}`, fontConfig),
