@@ -12,10 +12,10 @@ export const fontConfig = {
 };
 
 export const PLAYER_COLORS: Record<number, string> = {
-  1: "#22c55e",
-  2: "#38bdf8",
+  1: "#23B85A",
+  2: "#38B2E8",
   3: "#facc15",
-  4: "#a78bfa",
+  4: "#987EE5",
 };
 
 export const WS_URL = import.meta.env.VITE_WS_URL;

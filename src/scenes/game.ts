@@ -162,9 +162,9 @@ export function gameScene() {
     }
 
     gameManager.numberDucksShotInRound = 0;
-    for (const duckIcon of duckIcons.children) {
-      duckIcon.color = k.color(255, 255, 255);
-    }
+    duckIcons.children.forEach((icon) => {
+      icon.use(k.color(255, 255, 255));
+    });
 
     gameManager.enterState("round-start");
   });
@@ -175,7 +175,8 @@ export function gameScene() {
       k.anchor("center"),
       k.pos(),
       k.area({ collisionIgnore: ["duck"] }),
-      k.color(PLAYER_COLORS[index]),
+      k.color(k.Color.fromHex(PLAYER_COLORS[index])),
+      k.scale(1.2),
       k.z(3),
       `cursor-${index}`,
     ]);

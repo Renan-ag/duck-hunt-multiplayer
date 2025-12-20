@@ -82,7 +82,7 @@ window.onload = () => {
 
   network.send({
     type: "join-room",
-    sessionId: roomId,
+    roomId,
   });
 
   /* ===============================

@@ -25,12 +25,11 @@ export const players = new Map<number, Player>();
 network.onMessage(async (msg) => {
   if (msg.type === "room-created") {
     console.log("Room created");
-    const url = `${location.origin}/controller.html?room=${msg.sessionId}`;
-    console.log(url);
+    const url = `${location.origin}/controller.html?room=${msg.roomId}`;
     const canvas = await generateQRCodeCanvas(url);
 
     k.loadSprite("qr", canvas);
-    k.add([k.sprite("qr"), k.scale(0.1), k.pos(220, 40), k.anchor("center")]);
+    k.add([k.sprite("qr"), k.scale(0.18), k.pos(215, 36), k.anchor("center")]);
   }
 
   if (msg.type === "player-joined") {
