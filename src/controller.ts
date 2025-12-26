@@ -9,6 +9,10 @@ import {
 } from "./helpers/utils-controller";
 
 window.onload = () => {
+  /* ===============================
+     CONFIG / THEME
+  =============================== */
+
   const PLAYER_THEMES: Record<
     number,
     { bg: string; primary: string; text: string }
@@ -17,6 +21,7 @@ window.onload = () => {
     2: { bg: "#0c4a6e", primary: "#38bdf8", text: "#082f49" },
     3: { bg: "#713f12", primary: "#facc15", text: "#422006" },
     4: { bg: "#4c1d95", primary: "#a78bfa", text: "#2e1065" },
+    5: { bg: "#7c2d12", primary: "#fb923c", text: "#431407" },
   };
 
   const statusElement = document.getElementById("status");
@@ -25,22 +30,21 @@ window.onload = () => {
   const shootBtn = document.getElementById("shoot");
   const recalibrateBtn = document.getElementById("recalibrate");
 
-  const network = new SocketClient<ServerMessage>(WS_URL);
   const SHOOT_COOLDOWN = 500;
 
   let playerId: number | null = null;
+  let rejoinToken: string | null = null;
+  let handshakeDone = false;
 
   let canShoot = true;
   let calibrated = false;
   let baseGamma = 0;
   let baseBeta = 0;
-
   let lastGamma = 0;
   let lastBeta = 0;
 
   function updateStatus(text: string) {
-    if (!statusElement) return;
-    statusElement.textContent = text;
+    if (statusElement) statusElement.textContent = text;
   }
 
   function applyTheme(playerId: number) {
@@ -52,61 +56,104 @@ window.onload = () => {
     document.documentElement.style.setProperty("--primary-text", t.text);
   }
 
-  /* NETWORK */
-  const roomId = getRoomId();
+  /* ===============================
+     NETWORK
+  =============================== */
 
+  const roomId = getRoomId();
   if (!roomId) {
     document.body.innerHTML = "<h1>Sala inválida</h1>";
-    throw new Error("Room ID ausente");
+    return;
   }
 
-  network.onMessage(async (msg) => {
+  const network = new SocketClient<ServerMessage>(WS_URL);
+
+  /**
+   * HANDSHAKE ÚNICO
+   * - Se houver token → tenta rejoin
+   * - Senão → join normal
+   */
+  function handshake() {
+    if (handshakeDone) return;
+    handshakeDone = true;
+
+    const savedToken = localStorage.getItem("rejoinToken");
+
+    if (savedToken) {
+      updateStatus("Reconectando...");
+      network.send({
+        type: "rejoin-room",
+        roomId,
+        rejoinToken: savedToken,
+      });
+      return;
+    }
+
+    network.send({
+      type: "join-room",
+      roomId,
+    });
+  }
+
+  // Sem onOpen → usamos timeout seguro
+  setTimeout(handshake, 300);
+
+  /* ===============================
+     SERVER MESSAGES
+  =============================== */
+
+  network.onMessage((msg) => {
     if (msg.type === "joined-room") {
       playerId = msg.playerId;
+      rejoinToken = msg.rejoinToken;
+
+      localStorage.setItem("rejoinToken", rejoinToken);
+      localStorage.setItem("roomId", roomId);
 
       if (titleEl) titleEl.textContent = `Player ${playerId}`;
       updateStatus("Controle pronto");
 
-      if (shootBtn) shootBtn.style.display = "block";
-      if (recalibrateBtn) recalibrateBtn.style.display = "block";
+      shootBtn && (shootBtn.style.display = "block");
+      recalibrateBtn && (recalibrateBtn.style.display = "block");
 
       applyTheme(playerId);
-      vibrate(100);
+      vibrate(50);
+      return;
+    }
+
+    if (msg.type === "rejoined-room") {
+      playerId = msg.playerId;
+
+      if (titleEl) titleEl.textContent = `Player ${playerId}`;
+      updateStatus("Reconectado");
+
+      shootBtn && (shootBtn.style.display = "block");
+      recalibrateBtn && (recalibrateBtn.style.display = "block");
+
+      applyTheme(playerId);
+      vibrate(30);
+      return;
     }
 
     if (msg.type === "error") {
       updateStatus(msg.message);
-      vibrate([100, 50, 100]);
+      vibrate([50, 30, 50]);
     }
-  });
 
-  network.send({
-    type: "join-room",
-    roomId,
+    if (msg.type === "error" && msg.message.toLowerCase().includes("rejoin")) {
+      updateStatus("Reconexão expirada");
+
+      setTimeout(() => {
+        localStorage.removeItem("rejoinToken");
+        handshakeDone = false;
+        handshake();
+      }, 1000);
+    }
   });
 
   /* ===============================
-   PERMISSÃO + GIROSCÓPIO (iOS SAFE)
-=============================== */
-  function hasOrientationPermissionAPI(
-    e: typeof DeviceOrientationEvent,
-  ): e is typeof DeviceOrientationEvent & {
-    requestPermission: () => Promise<PermissionState>;
-  } {
-    return typeof (e as any).requestPermission === "function";
-  }
-
-  async function requestPermission() {
-    if (
-      typeof DeviceOrientationEvent !== "undefined" &&
-      hasOrientationPermissionAPI(DeviceOrientationEvent)
-    ) {
-      const permission = await DeviceOrientationEvent.requestPermission();
-      return permission === "granted";
-    }
-
-    return true;
-  }
+     GYROSCOPE
+  =============================== */
 
   function handleOrientation(e: DeviceOrientationEvent) {
     if (!playerId || !calibrated) return;
@@ -129,56 +176,51 @@ window.onload = () => {
     });
   }
 
-  if (recalibrateBtn) {
-    recalibrateBtn.onclick = () => {
-      if (!playerId) return;
+  /* ===============================
+     UI EVENTS
+  =============================== */
 
-      baseGamma = lastGamma;
-      baseBeta = lastBeta;
-      calibrated = true;
+  recalibrateBtn?.addEventListener("click", () => {
+    if (!playerId) return;
 
-      vibrate([50, 30, 50]);
-      updateStatus("Centro calibrado");
+    baseGamma = lastGamma;
+    baseBeta = lastBeta;
+    calibrated = true;
 
-      network.send({
-        type: "input",
-        payload: { recalibrate: true },
-      });
-    };
-  }
+    updateStatus("Centro calibrado");
+    vibrate(30);
 
-  if (startBtn) {
-    startBtn.onclick = async () => {
-      const allowed = await requestPermission();
-      if (!allowed) {
-        updateStatus("Permissão negada");
-        return;
-      }
+    network.send({
+      type: "input",
+      payload: { recalibrate: true },
+    });
+  });
 
-      startBtn.remove();
-      updateStatus("Segure o celular reto e toque em RECALIBRAR");
-      vibrate(80);
+  startBtn?.addEventListener("click", async () => {
+    startBtn.remove();
+    updateStatus("Segure reto e toque em RE-CALIBRAR");
+    vibrate(40);
 
-      window.addEventListener("deviceorientation", handleOrientation);
-    };
-  }
+    window.addEventListener("deviceorientation", handleOrientation);
+  });
 
-  if (shootBtn) {
-    shootBtn.onclick = () => {
-      if (!canShoot) return;
+  shootBtn?.addEventListener("click", () => {
+    if (!canShoot || !playerId) return;
 
-      canShoot = false;
+    canShoot = false;
+    vibrate(30);
 
-      vibrate(50);
+    network.send({
+      type: "input",
+      payload: { shoot: true },
+    });
 
-      network.send({
-        type: "input",
-        payload: { shoot: true },
-      });
-
-      setTimeout(() => {
-        canShoot = true;
-      }, SHOOT_COOLDOWN);
-    };
-  }
+    setTimeout(() => {
+      canShoot = true;
+    }, SHOOT_COOLDOWN);
+  });
 };
+
+window.addEventListener("beforeunload", () => {
+  localStorage.removeItem("rejoinToken");
+});

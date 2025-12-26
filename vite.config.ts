@@ -11,6 +11,6 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ["purchased-keeping-voices-monitors.trycloudflare.com"],
+    allowedHosts: ["wisconsin-between-budgets-plumbing.trycloudflare.com"],
   },
 });

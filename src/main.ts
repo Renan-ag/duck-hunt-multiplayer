@@ -10,6 +10,7 @@ import { PLAYER_COLORS, WS_URL } from "./constants";
 import type { GameObj } from "kaplay";
 import { handlePlayerInput } from "./helpers/utils";
 import { gameManager } from "./gameManager";
+import { showToast } from "./helpers/toast";
 
 export const network = new NetworkManager<ServerMessage>(WS_URL);
 
@@ -33,7 +34,7 @@ network.onMessage(async (msg) => {
   }
 
   if (msg.type === "player-joined") {
-    console.log(`Player ${msg.playerId} joined`);
+    showToast(`Player ${msg.playerId} conectado`, 2000);
     const color = PLAYER_COLORS[msg.playerId];
 
     const cursor = k.add([
@@ -58,6 +59,14 @@ network.onMessage(async (msg) => {
     if (gameManager.state === "menu") {
       if (msg.payload.shoot) k.go("game");
     }
+  }
+
+  if (msg.type === "player-left") {
+    showToast(`Player ${msg.playerId} desconectou`);
+  }
+
+  if (msg.type === "rejoined-room") {
+    showToast(`Player ${msg.playerId} re-entrou na sala`, 2000);
   }
 });
 
