@@ -9,10 +9,6 @@ import {
 } from "./helpers/utils-controller";
 
 window.onload = () => {
-  /* ===============================
-     CONFIG / THEME
-  =============================== */
-
   const PLAYER_THEMES: Record<
     number,
     { bg: string; primary: string; text: string }
@@ -95,12 +91,7 @@ window.onload = () => {
     });
   }
 
-  // Sem onOpen → usamos timeout seguro
   setTimeout(handshake, 300);
-
-  /* ===============================
-     SERVER MESSAGES
-  =============================== */
 
   network.onMessage((msg) => {
     if (msg.type === "joined-room") {
@@ -150,10 +141,6 @@ window.onload = () => {
       }, 1000);
     }
   });
-
-  /* ===============================
-     GYROSCOPE
-  =============================== */
 
   function handleOrientation(e: DeviceOrientationEvent) {
     if (!playerId || !calibrated) return;

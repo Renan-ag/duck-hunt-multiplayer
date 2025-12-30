@@ -7,26 +7,19 @@ import { gameOver } from "./scenes/game-over";
 import { mainMenu } from "./scenes/main-menu";
 import { NetworkManager } from "./socket/network-manager";
 import { PLAYER_COLORS, WS_URL } from "./constants";
-import type { GameObj } from "kaplay";
 import { handlePlayerInput } from "./helpers/utils";
 import { gameManager } from "./gameManager";
 import { showToast } from "./helpers/toast";
+import type { Player } from "./types/player";
 
 export const network = new NetworkManager<ServerMessage>(WS_URL);
-
-type Player = {
-  cursor: GameObj;
-  targetX: number;
-  targetY: number;
-  score: number;
-};
 
 export const players = new Map<number, Player>();
 
 network.onMessage(async (msg) => {
   if (msg.type === "room-created") {
-    console.log("Room created");
     const url = `${location.origin}/controller.html?room=${msg.roomId}`;
+    console.log(`Controller url: ${url}`);
     const canvas = await generateQRCodeCanvas(url);
 
     k.loadSprite("qr", canvas);

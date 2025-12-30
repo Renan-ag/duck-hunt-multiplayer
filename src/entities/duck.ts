@@ -164,7 +164,6 @@ export function makeDuck(duckId: string, speed: number) {
         });
       },
     },
-
     "duck",
   ]);
 }
