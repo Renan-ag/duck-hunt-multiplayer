@@ -9,6 +9,10 @@ import {
 } from "./helpers/utils-controller";
 
 window.onload = () => {
+  /* ===============================
+     THEME
+  =============================== */
+
   const PLAYER_THEMES: Record<
     number,
     { bg: string; primary: string; text: string }
@@ -32,8 +36,9 @@ window.onload = () => {
   let rejoinToken: string | null = null;
   let handshakeDone = false;
 
-  let canShoot = true;
   let calibrated = false;
+  let canShoot = true;
+
   let baseGamma = 0;
   let baseBeta = 0;
   let lastGamma = 0;
@@ -53,6 +58,29 @@ window.onload = () => {
   }
 
   /* ===============================
+     iOS ORIENTATION PERMISSION
+  =============================== */
+
+  function hasOrientationPermissionAPI(
+    e: typeof DeviceOrientationEvent,
+  ): e is typeof DeviceOrientationEvent & {
+    requestPermission: () => Promise<PermissionState>;
+  } {
+    return typeof (e as any).requestPermission === "function";
+  }
+
+  async function requestOrientationPermission() {
+    if (
+      typeof DeviceOrientationEvent !== "undefined" &&
+      hasOrientationPermissionAPI(DeviceOrientationEvent)
+    ) {
+      const permission = await DeviceOrientationEvent.requestPermission();
+      return permission === "granted";
+    }
+    return true; // Android / Desktop
+  }
+
+  /* ===============================
      NETWORK
   =============================== */
 
@@ -65,9 +93,9 @@ window.onload = () => {
   const network = new SocketClient<ServerMessage>(WS_URL);
 
   /**
-   * HANDSHAKE ÚNICO
-   * - Se houver token → tenta rejoin
-   * - Senão → join normal
+   * Handshake único:
+   * - tenta rejoin se existir token
+   * - senão faz join normal
    */
   function handshake() {
     if (handshakeDone) return;
@@ -85,12 +113,14 @@ window.onload = () => {
       return;
     }
 
+    updateStatus("Conectando...");
     network.send({
       type: "join-room",
       roomId,
     });
   }
 
+  // Como o SocketClient não expõe onOpen
   setTimeout(handshake, 300);
 
   network.onMessage((msg) => {
@@ -128,19 +158,21 @@ window.onload = () => {
 
     if (msg.type === "error") {
       updateStatus(msg.message);
-      vibrate([50, 30, 50]);
-    }
 
-    if (msg.type === "error" && msg.message.toLowerCase().includes("rejoin")) {
-      updateStatus("Reconexão expirada");
-
-      setTimeout(() => {
-        localStorage.removeItem("rejoinToken");
-        handshakeDone = false;
-        handshake();
-      }, 1000);
+      // Rejoin expirou → entra novamente
+      if (msg.message.toLowerCase().includes("rejoin")) {
+        setTimeout(() => {
+          localStorage.removeItem("rejoinToken");
+          handshakeDone = false;
+          handshake();
+        }, 1000);
+      }
     }
   });
+
+  /* ===============================
+     GYROSCOPE
+  =============================== */
 
   function handleOrientation(e: DeviceOrientationEvent) {
     if (!playerId || !calibrated) return;
@@ -167,6 +199,21 @@ window.onload = () => {
      UI EVENTS
   =============================== */
 
+  startBtn?.addEventListener("click", async () => {
+    const allowed = await requestOrientationPermission();
+
+    if (!allowed) {
+      updateStatus("Permissão de movimento negada");
+      return;
+    }
+
+    startBtn.remove();
+    updateStatus("Segure reto e toque em RE-CALIBRAR");
+    vibrate(40);
+
+    window.addEventListener("deviceorientation", handleOrientation);
+  });
+
   recalibrateBtn?.addEventListener("click", () => {
     if (!playerId) return;
 
@@ -183,16 +230,8 @@ window.onload = () => {
     });
   });
 
-  startBtn?.addEventListener("click", async () => {
-    startBtn.remove();
-    updateStatus("Segure reto e toque em RE-CALIBRAR");
-    vibrate(40);
-
-    window.addEventListener("deviceorientation", handleOrientation);
-  });
-
   shootBtn?.addEventListener("click", () => {
-    if (!canShoot || !playerId) return;
+    if (!playerId || !canShoot) return;
 
     canShoot = false;
     vibrate(30);
@@ -208,6 +247,9 @@ window.onload = () => {
   });
 };
 
+/**
+ * Limpa token se o usuário sair de vez
+ */
 window.addEventListener("beforeunload", () => {
   localStorage.removeItem("rejoinToken");
 });

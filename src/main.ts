@@ -59,7 +59,7 @@ network.onMessage(async (msg) => {
   }
 
   if (msg.type === "rejoined-room") {
-    showToast(`Player ${msg.playerId} re-entrou na sala`, 2000);
+    showToast(`Player ${msg.playerId} re-entrou na sala`, 3500);
   }
 });
 
